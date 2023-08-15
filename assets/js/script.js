@@ -11,7 +11,7 @@ var savedSearchArray = [];
 
 
 
-
+// listes for a click on the search button. Then determines if the user enterd a zip code or a city name.
 searchBtn.addEventListener("click", function(event){
     event.preventDefault();
     while (cityList.hasChildNodes()){
@@ -32,6 +32,7 @@ searchBtn.addEventListener("click", function(event){
 
 });
 
+// provides a list of city names for the user to select then uses the longitude and latitude of the user selected city
 function getCityName(userInput){
     var requestUrl = "http://api.openweathermap.org/geo/1.0/direct?q="+userInput+"&limit=5&appid="+APIKey;
     var cityLongitude;
@@ -87,7 +88,7 @@ function getCityName(userInput){
     })
 }
 
-
+// gets the longitude and latitude of a city zip code that the user entered
 function getZipCode(userInput){
     var requestUrl = "http://api.openweathermap.org/geo/1.0/zip?zip="+userInput+",US&appid="+APIKey;
     var cityLongitude;
@@ -110,6 +111,7 @@ function getZipCode(userInput){
     })
 }
 
+//gets the weather for a given city lon and lat and displays the current weather and 5 day forecast
 function getWeather(lat, lon){
     if(futureForecast.children.length > 0){
         document.querySelectorAll('.weather-cards').forEach(e => e.remove());
@@ -188,6 +190,7 @@ function getWeather(lat, lon){
 
 }
 
+// saves the user entered city/zip code data to local storage
 function saveSearch(lat , lon, city, location){
     var savedLocation = {
         latitude: lat, 
@@ -206,6 +209,7 @@ function saveSearch(lat , lon, city, location){
     renderSavedSearches();
 }
 
+// displays the saved locations as a button for the user to search again. 
 function renderSavedSearches(){
     var previousSearch = document.getElementById("previous-search");
     var savedSearchArray = JSON.parse(localStorage.getItem("savedSearchArray"));
