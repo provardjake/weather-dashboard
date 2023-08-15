@@ -7,6 +7,7 @@ var todayDate = new Date();
 var day = todayDate.getDate();
 var month = todayDate.getMonth() + 1;
 todayDate = month+"/"+day;
+var savedSearchArray = [];
 
 
 
@@ -16,7 +17,9 @@ searchBtn.addEventListener("click", function(event){
     while (cityList.hasChildNodes()){
         cityList.removeChild(cityList.firstChild);
     }
-
+    if(futureForecast.children.length > 0){
+        document.querySelectorAll('.weather-cards').forEach(e => e.remove());
+    }
     var userInput = document.querySelector("#user-input").value;
     var checkUserInput = parseInt(userInput);
 
@@ -34,6 +37,9 @@ function getCityName(userInput){
     var cityLongitude;
     var cityLatitude;
     var cityArray = [];
+    var cityName;
+    var cityCountry;
+    var cityState;
 
     fetch(requestUrl)
     .then(function(response){
@@ -44,7 +50,7 @@ function getCityName(userInput){
             var cityListItem = document.createElement("button");
             cityListItem.setAttribute("type", "button");
             cityListItem.setAttribute("data-array-index", i);
-            cityListItem.setAttribute("class", "list-group-item list-group-item-action list-group-item-secondary");
+            cityListItem.setAttribute("class", "list-group-item list-group-item-action list-group-item-secondary city-search-item");
             if(data[i].state === undefined || data[i].country !== "US"){
                 cityListItem.textContent = data[i].name+", "+data[i].country;
             }
@@ -58,19 +64,25 @@ function getCityName(userInput){
 
         document.addEventListener("click", function(event){
             event.preventDefault();
-            const target = event.target.closest(".list-group-item");
+            const target = event.target.closest(".city-search-item");
             if(target){
                 var cityArrayIndex = parseInt(target.getAttribute("data-array-index"));
                 cityLatitude = cityArray[cityArrayIndex].lat;
                 cityLongitude = cityArray[cityArrayIndex].lon;
+                cityName = cityArray[cityArrayIndex].name;
+                cityCountry = cityArray[cityArrayIndex].country;
+                cityState = cityArray[cityArrayIndex].state;
 
+
+                if(cityState === "US"){
+                    saveSearch(cityLatitude, cityLongitude, cityName, cityState)
+                }
+                else{
+                    saveSearch(cityLatitude, cityLongitude, cityName, cityCountry)
+                }
                 getWeather(cityLatitude, cityLongitude);
-                saveSearch(cityLatitude, cityLongitude);
                 cityList.style.display = "none";
             }
-            
-            
-            
         })
     })
 }
@@ -80,7 +92,8 @@ function getZipCode(userInput){
     var requestUrl = "http://api.openweathermap.org/geo/1.0/zip?zip="+userInput+",US&appid="+APIKey;
     var cityLongitude;
     var cityLatitude;
-
+    var cityName;
+    var cityCountry;
 
     fetch(requestUrl)
     .then(function(response){
@@ -89,8 +102,11 @@ function getZipCode(userInput){
     .then(function(data){
         cityLatitude = data.lat;
         cityLongitude = data.lon;
+        cityName = data.name;
+        cityCountry = data.country;
+
+        saveSearch(cityLatitude, cityLongitude, cityName, cityCountry)
         getWeather(cityLatitude, cityLongitude);
-        saveSearch(cityLatitude, cityLongitude);
     })
 }
 
@@ -133,7 +149,6 @@ function getWeather(lat, lon){
         todayForecast.appendChild(todayHum);
         todayForecast.appendChild(todayWind);
         futureForecast.style.display = "flex";
-        console.log(data);
     });
     
     fetch(requestURlFiveDay)
@@ -141,8 +156,6 @@ function getWeather(lat, lon){
         return response.json();
     })
     .then(function(data){
-        console.log(data);  
-
         for(let x = 0; x < data.list.length; x+= 8){
             var futureText = document.createElement("h5");
             var futureTemp = document.createElement("p");
@@ -152,7 +165,6 @@ function getWeather(lat, lon){
             if(x > 0){
                 i = x / 8;
             }
-            console.log(i);
             var futureForecastCard = document.getElementById("day-"+i);
             var formatDate = data.list[x].dt_txt.slice(6, 10);
 
@@ -176,6 +188,50 @@ function getWeather(lat, lon){
 
 }
 
-function saveSearch(lat , lon){
-    return;
+function saveSearch(lat , lon, city, location){
+    var savedLocation = {
+        latitude: lat, 
+        longitude: lon,
+        cityName: city,
+        locationName: location
+    };
+
+    savedSearchArray = JSON.parse(localStorage.getItem("savedSearchArray") || "[]");
+
+    savedSearchArray.push(savedLocation);
+
+
+    localStorage.setItem("savedSearchArray", JSON.stringify(savedSearchArray));
+
+    renderSavedSearches();
 }
+
+function renderSavedSearches(){
+    var previousSearch = document.getElementById("previous-search");
+    var savedSearchArray = JSON.parse(localStorage.getItem("savedSearchArray"));
+    var lat;
+    var lon;
+
+    for(var i = 0; i < savedSearchArray.length; i++){
+        var savedSearchButton = document.createElement("button");
+        savedSearchButton.setAttribute("type", "button");
+        savedSearchButton.setAttribute("data-array-index", i);
+        savedSearchButton.setAttribute("class", "list-group-item list-group-item-action list-group-item-secondary saved-search-item");
+
+        savedSearchButton.textContent = savedSearchArray[i].cityName+", "+savedSearchArray[i].locationName;
+        previousSearch.appendChild(savedSearchButton);
+    }
+
+    document.addEventListener("click", function(event){
+        event.preventDefault();
+        const target = event.target.closest(".saved-search-item");
+        if(target){
+            var savedSearchArrayIndex = parseInt(target.getAttribute("data-array-index"));
+            lat = savedSearchArray[savedSearchArrayIndex].latitude;
+            lon = savedSearchArray[savedSearchArrayIndex].longitude;
+        }
+        getWeather(lat,lon);
+    });
+}
+
+renderSavedSearches();
